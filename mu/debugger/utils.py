@@ -17,6 +17,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import re
+
+
+TRIPLE_QUOTE_START_RE = re.compile(r"^(?i:[rubf]{0,2})(\"\"\"|''')")
+
 
 def is_breakpoint_line(code):
     """
@@ -29,8 +34,7 @@ def is_breakpoint_line(code):
     if not code:
         return False
     # Can't set breakpoints on blank lines or comments.
-    # TODO: Make this more robust.
-    if code[0] == "#" or code[:3] == '"""' or code[:3] == "'''":
+    if code[0] == "#" or TRIPLE_QUOTE_START_RE.match(code):
         return False
     # Can't set breakpoints on lines that end with opening (, { or [
     if code[-1] in ("(", "{", "["):
