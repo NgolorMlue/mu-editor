@@ -49,11 +49,10 @@ from .interface import Window
 from .resources import load_icon, load_movie, load_pixmap
 from .modes import (
     PythonMode,
-    CircuitPythonMode,
     MicrobitMode,
     DebugMode,
     PyGameZeroMode,
-    WebMode,
+    ESPMode,
 )
 from .interface.themes import NIGHT_STYLE, DAY_STYLE, CONTRAST_STYLE
 from . import settings
@@ -276,11 +275,10 @@ def setup_modes(editor, view):
     """
     return LazyModeDict({
         "python": lambda: PythonMode(editor, view),
-        "circuitpython": lambda: CircuitPythonMode(editor, view),
         "microbit": lambda: MicrobitMode(editor, view),
-        "web": lambda: WebMode(editor, view),
         "debugger": lambda: DebugMode(editor, view),
         "pygamezero": lambda: PyGameZeroMode(editor, view),
+        "esp": lambda: ESPMode(editor, view),
     })
 
 
