@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import logging
+import os
+import platformdirs
 
 from PyQt5.QtGui import QColor, QFontDatabase
 from mu.resources import load_stylesheet, load_font_data
@@ -36,6 +38,39 @@ NIGHT_STYLE = load_stylesheet("night.css")
 DAY_STYLE = load_stylesheet("day.css")
 # CONTRAST_STYLE is a high contrast theme.
 CONTRAST_STYLE = load_stylesheet("contrast.css")
+
+
+def _load_user_stylesheet(name):
+    """
+    Look for a user-supplied CSS file in the platform user data directory
+    under a ``themes`` subdirectory. Returns the CSS string if found, else
+    returns None.
+    """
+    user_themes_dir = os.path.join(
+        platformdirs.user_data_dir("mu", "python"), "themes"
+    )
+    path = os.path.join(user_themes_dir, name)
+    if os.path.isfile(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return f.read()
+        except Exception:
+            pass
+    return None
+
+
+# Override built-in themes with user versions if present
+_user_night = _load_user_stylesheet("night.css")
+if _user_night:
+    NIGHT_STYLE = _user_night
+
+_user_day = _load_user_stylesheet("day.css")
+if _user_day:
+    DAY_STYLE = _user_day
+
+_user_contrast = _load_user_stylesheet("contrast.css")
+if _user_contrast:
+    CONTRAST_STYLE = _user_contrast
 
 MIN_WINDOW_WIDTH = 500
 MIN_WINDOW_HEIGHT = 300

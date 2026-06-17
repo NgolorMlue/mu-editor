@@ -53,12 +53,7 @@ from .modes import (
     MicrobitMode,
     DebugMode,
     PyGameZeroMode,
-    ESPMode,
     WebMode,
-    PyboardMode,
-    LegoMode,
-    PicoMode,
-    SnekMode,
 )
 from .interface.themes import NIGHT_STYLE, DAY_STYLE, CONTRAST_STYLE
 from . import settings
@@ -244,26 +239,49 @@ def setup_logging():
         log.addHandler(stdout_handler)
 
 
+class LazyModeDict(dict):
+    """
+    A dict subclass that accepts a dict of {name: callable} factories and only
+    instantiates each mode on first access.
+    """
+
+    def __init__(self, factories):
+        self._factories = factories
+        super().__init__()
+
+    def __getitem__(self, key):
+        if key not in self:
+            if key in self._factories:
+                self[key] = self._factories[key]()
+        return super().__getitem__(key)
+
+    def __contains__(self, key):
+        return key in self._factories or super().__contains__(key)
+
+    def keys(self):
+        return self._factories.keys()
+
+    def values(self):
+        return [self[k] for k in self._factories]
+
+    def items(self):
+        return [(k, self[k]) for k in self._factories]
+
+
 def setup_modes(editor, view):
     """
-    Create a simple dictionary to hold instances of the available modes.
+    Create a LazyModeDict to hold instances of the available modes.
 
-    *PREMATURE OPTIMIZATION ALERT* This may become more complex in future so
-    splitting things out here to contain the mess. ;-)
+    Modes are only instantiated on first access (lazy loading).
     """
-    return {
-        "python": PythonMode(editor, view),
-        "snek": SnekMode(editor, view),
-        "circuitpython": CircuitPythonMode(editor, view),
-        "microbit": MicrobitMode(editor, view),
-        "esp": ESPMode(editor, view),
-        "web": WebMode(editor, view),
-        "pyboard": PyboardMode(editor, view),
-        "debugger": DebugMode(editor, view),
-        "pygamezero": PyGameZeroMode(editor, view),
-        "lego": LegoMode(editor, view),
-        "pico": PicoMode(editor, view),
-    }
+    return LazyModeDict({
+        "python": lambda: PythonMode(editor, view),
+        "circuitpython": lambda: CircuitPythonMode(editor, view),
+        "microbit": lambda: MicrobitMode(editor, view),
+        "web": lambda: WebMode(editor, view),
+        "debugger": lambda: DebugMode(editor, view),
+        "pygamezero": lambda: PyGameZeroMode(editor, view),
+    })
 
 
 class MutexError(BaseException):
@@ -469,6 +487,7 @@ def run():
     find_again_handlers = (editor.find_again, editor.find_again_backward)
     editor_window.connect_find_again(find_again_handlers, "F3")
     editor_window.connect_toggle_comments(editor.toggle_comments, "Ctrl+K")
+    editor_window.connect_toggle_line_numbers("Ctrl+L")
     editor.connect_to_status_bar(editor_window.status_bar)
 
     # Restore the previous session along with files passed by the os

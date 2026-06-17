@@ -90,6 +90,14 @@ class EditorPane(QsciScintilla):
     # Signal fired when a context menu is requested.
     context_menu = pyqtSignal()
 
+    _CLOSERS = {
+        "(": ")",
+        "[": "]",
+        "{": "}",
+        '"': '"',
+        "'": "'",
+    }
+
     def __init__(self, path, text, newline=NEWLINE):
         super().__init__()
         self.setUtf8(True)
@@ -638,3 +646,39 @@ class EditorPane(QsciScintilla):
             self.setSelection(line_number, 0, line_number, len(line_content))
             self.replaceSelectedText(new_line)
             self.setSelection(line_number, 0, line_number, len(new_line) - 1)
+
+    def keyPressEvent(self, event):
+        """
+        Override key press events to provide auto-closing of brackets and
+        quotes, and skip-over behaviour for closing characters.
+        """
+        key = event.text()
+        if key in self._CLOSERS and not self.hasSelectedText():
+            closer = self._CLOSERS[key]
+            super().keyPressEvent(event)
+            self.insert(closer)
+            line, col = self.getCursorPosition()
+            self.setCursorPosition(line, col)
+        elif key in self._CLOSERS.values() and not self.hasSelectedText():
+            line, col = self.getCursorPosition()
+            next_char = self.text(line)[col:col + 1] if self.text(line) else ""
+            if next_char == key:
+                # skip over the closing char instead of inserting duplicate
+                self.setCursorPosition(line, col + 1)
+            else:
+                super().keyPressEvent(event)
+        else:
+            super().keyPressEvent(event)
+
+    def toggle_line_numbers(self):
+        """
+        Toggle line numbers on or off.
+        """
+        visible = self.marginWidth(0) > 0
+        if visible:
+            self._saved_margin_width = self.marginWidth(0)
+            self.setMarginWidth(0, 0)
+            self.setMarginLineNumbers(0, False)
+        else:
+            self.setMarginLineNumbers(0, True)
+            self.setMarginWidth(0, getattr(self, "_saved_margin_width", 50))

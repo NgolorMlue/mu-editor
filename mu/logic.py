@@ -1303,6 +1303,7 @@ class Editor(QObject):
             tab.path = path
         if tab.path:
             # The user specified a path to a file.
+            self._autoformat_with_black(tab)
             self.save_tab_to_file(tab)
         else:
             # The user cancelled the filename selection.
@@ -1879,6 +1880,29 @@ class Editor(QObject):
                 "these problems."
             )
             self._view.show_message(message, information)
+
+    def _autoformat_with_black(self, tab):
+        """
+        Silently run black on the tab's source code and update the editor text
+        in place. Does nothing if black cannot format the code (e.g. syntax
+        errors), or if the file is not a Python file.
+        """
+        if sys.version_info[:2] < (3, 6):
+            return
+        if tab.path and not self.has_python_extension(tab.path):
+            return
+        try:
+            from black import format_str, FileMode, TargetVersion
+
+            source_code = tab.text()
+            filemode = FileMode(
+                target_versions={TargetVersion.PY36},
+                line_length=MAX_LINE_LENGTH,
+            )
+            tidy_code = format_str(source_code, mode=filemode)
+            tab.SendScintilla(tab.SCI_SETTEXT, tidy_code.encode("utf-8"))
+        except Exception:
+            pass  # black can't format if there are syntax errors; that's fine
 
     def has_python_extension(self, filename):
         """

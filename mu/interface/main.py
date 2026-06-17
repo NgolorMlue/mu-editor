@@ -1169,6 +1169,10 @@ class Window(QMainWindow):
         self.setStatusBar(self.status_bar)
         self.addToolBar(self.button_bar)
         self.show()
+        self.next_tab_shortcut = QShortcut(QKeySequence("Ctrl+Tab"), self)
+        self.next_tab_shortcut.activated.connect(self._next_tab)
+        self.prev_tab_shortcut = QShortcut(QKeySequence("Ctrl+Shift+Tab"), self)
+        self.prev_tab_shortcut.activated.connect(self._prev_tab)
 
     def resizeEvent(self, resizeEvent):
         """
@@ -1352,6 +1356,42 @@ class Window(QMainWindow):
         """
         if self.current_tab:
             self.current_tab.toggle_comments()
+
+    def connect_toggle_line_numbers(self, shortcut):
+        """
+        Create a keyboard shortcut to toggle line numbers on all editor tabs.
+        """
+        self.toggle_line_numbers_shortcut = QShortcut(
+            QKeySequence(shortcut), self
+        )
+        self.toggle_line_numbers_shortcut.activated.connect(
+            self.toggle_line_numbers
+        )
+
+    def toggle_line_numbers(self):
+        """
+        Toggle line numbers on or off for all editor tabs.
+        """
+        for widget in self.widgets:
+            widget.toggle_line_numbers()
+
+    def _next_tab(self):
+        """
+        Switch to the next tab, wrapping around at the end.
+        """
+        count = self.tabs.count()
+        if count > 1:
+            idx = (self.tabs.currentIndex() + 1) % count
+            self.tabs.setCurrentIndex(idx)
+
+    def _prev_tab(self):
+        """
+        Switch to the previous tab, wrapping around at the start.
+        """
+        count = self.tabs.count()
+        if count > 1:
+            idx = (self.tabs.currentIndex() - 1) % count
+            self.tabs.setCurrentIndex(idx)
 
     def show_device_selector(self):
         """
